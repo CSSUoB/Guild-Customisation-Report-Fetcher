@@ -147,7 +147,7 @@ async def get_product_customisations(product_id_or_name: str, auth_cookie: str, 
         # save the csv file
         with open(f"{product_id_or_name.lower().replace(" ", "_")}_customisations.csv", "wb") as file:
             # write the first 5 lines
-            for i in range(5):
+            for i in range(4):
                 file.write(await file_response.content.readline())
 
             # write the rest of the file, but only if the line contains the product
