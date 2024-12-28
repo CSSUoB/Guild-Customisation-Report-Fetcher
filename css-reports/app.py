@@ -42,4 +42,5 @@ async def fetch_customisation_report():
             os.remove(csv_file_path)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8000)
+    from waitress import serve
+    serve(app, host='0.0.0.0', port=8000)
