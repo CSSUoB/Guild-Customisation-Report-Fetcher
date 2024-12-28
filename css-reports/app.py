@@ -1,6 +1,5 @@
 from flask import Flask, request, send_file, jsonify, redirect
 from report import get_product_customisations
-from dotenv import set_key
 import os
 import re
 
@@ -27,14 +26,11 @@ async def fetch_customisation_report():
     
     product_name = re.sub(r'\W+', '', product_name)
 
-    set_key('.env', 'ORGANISATION_ADMIN_TOKEN', auth_cookie)
-    set_key('.env', 'ORGANISATION_ID', organisation_id)
-
     csv_file_path: str | None = None
 
     try:
         # Generate the CSV file
-        csv_file_path = await get_product_customisations(product_name)
+        csv_file_path = await get_product_customisations(product_id_or_name=product_name, auth_cookie=auth_cookie, org_id=organisation_id)
 
         if not csv_file_path:
             print("Failed to generate the customisation report")

@@ -7,10 +7,6 @@ from bs4 import BeautifulSoup
 import re
 from datetime import datetime, timedelta
 
-from dotenv import dotenv_values, load_dotenv
-
-load_dotenv()
-
 if TYPE_CHECKING:
     from http.cookies import Morsel
 
@@ -22,13 +18,6 @@ BASE_HEADERS: Final[Mapping[str, str]] = {
     "Expires": "0",
 }
 
-BASE_COOKIES: Final[Mapping[str, str]] = {
-    ".ASPXAUTH": dotenv_values(".env")["ORGANISATION_ADMIN_TOKEN"],
-}
-
-ORGANISATION_ID: Final[str] = dotenv_values(".env")["ORGANISATION_ID"]
-
-SALES_REPORTS_URL: Final[str] = f"https://www.guildofstudents.com/organisation/salesreports/{ORGANISATION_ID}/"
 SALES_FROM_DATE_KEY: Final[str] = "ctl00$ctl00$Main$AdminPageContent$drDateRange$txtFromDate"
 SALES_FROM_TIME_KEY: Final[str] = "ctl00$ctl00$Main$AdminPageContent$drDateRange$txtFromTime"
 SALES_TO_DATE_KEY: Final[str] = "ctl00$ctl00$Main$AdminPageContent$drDateRange$txtToDate"
@@ -39,8 +28,13 @@ from_date: datetime = TODAYS_DATE - timedelta(weeks=1200)
 to_date: datetime = TODAYS_DATE + timedelta(weeks=52)
 
 
-async def get_msl_context(url: str) -> tuple[dict[str, str], dict[str, str]]:
+async def get_msl_context(url: str, auth_cookie: str) -> tuple[dict[str, str], dict[str, str]]:
     """Get the required context headers, data and cookies to make a request to MSL."""
+
+    BASE_COOKIES: Mapping[str, str] = {
+        ".ASPXAUTH": auth_cookie,
+    }
+
     http_session: aiohttp.ClientSession = aiohttp.ClientSession(
         headers=BASE_HEADERS,
         cookies=BASE_COOKIES,
@@ -61,7 +55,7 @@ async def get_msl_context(url: str) -> tuple[dict[str, str], dict[str, str]]:
             cookie_morsel: Morsel[str] | None = field_data.cookies.get(cookie)
             if cookie_morsel is not None:
                 cookies[cookie] = cookie_morsel.value
-        cookies[".ASPXAUTH"] = dotenv_values(".env")["ORGANISATION_ADMIN_TOKEN"]
+        cookies[".ASPXAUTH"] = auth_cookie
 
     if "Login" in data_response.title.string:  # type: ignore[union-attr, operator]
         print("Redirected to login page!")
@@ -73,9 +67,10 @@ async def get_msl_context(url: str) -> tuple[dict[str, str], dict[str, str]]:
     return data_fields, cookies
 
 
-async def fetch_report_url_and_cookies() -> tuple[str | None, dict[str, str]]:  # noqa: E501
+async def fetch_report_url_and_cookies(auth_cookie: str, org_id: str) -> tuple[str | None, dict[str, str]]:  # noqa: E501
     """Fetch the specified report from the guild website."""
-    data_fields, cookies = await get_msl_context(url=SALES_REPORTS_URL)
+    SALES_REPORTS_URL: Final[str] = f"https://www.guildofstudents.com/organisation/salesreports/{org_id}/"
+    data_fields, cookies = await get_msl_context(url=SALES_REPORTS_URL, auth_cookie=auth_cookie)
 
     form_data: dict[str, str] = {
         SALES_FROM_DATE_KEY: from_date.strftime("%d/%m/%Y"),
@@ -130,32 +125,8 @@ async def fetch_report_url_and_cookies() -> tuple[str | None, dict[str, str]]:  
     return f"https://guildofstudents.com/{urlbase}CSV", cookies
 
 
-
-async def get_all_customisations() -> None:
-    """Get the set of product customisations for a given product ID, checking the past year."""
-    report_url, cookies = await fetch_report_url_and_cookies()
-
-    if report_url is None:
-        print("Failed to retrieve customisations report URL.")
-        raise ValueError("Failed to retrieve customisations report URL.")
-
-    file_session: aiohttp.ClientSession = aiohttp.ClientSession(
-        headers=BASE_HEADERS,
-        cookies=cookies,
-    )
-    async with file_session, file_session.get(url=report_url) as file_response:
-        if file_response.status != 200:
-            print("Customisation report file session returned a non 200 status code.")
-            print(file_response)
-            raise ValueError("Customisation report file session returned a non 200 status code.")
-
-        # save the csv file
-        with open("full_historical_customisations.csv", "wb") as file:
-            file.write(await file_response.read())
-
-
-async def get_product_customisations(product_id_or_name: str) -> str:
-    report_url, cookies = await fetch_report_url_and_cookies()
+async def get_product_customisations(product_id_or_name: str, auth_cookie: str, org_id: str) -> str:
+    report_url, cookies = await fetch_report_url_and_cookies(auth_cookie=auth_cookie, org_id=org_id)
 
     if report_url is None:
         print("Failed to retrieve customisations report URL.")
