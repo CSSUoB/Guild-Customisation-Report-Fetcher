@@ -26,6 +26,8 @@ async def fetch_customisation_report():
     set_key('.env', 'ORGANISATION_ADMIN_TOKEN', auth_cookie)
     set_key('.env', 'ORGANISATION_ID', organisation_id)
 
+    csv_file_path: str | None = None
+
     try:
         # Generate the CSV file
         csv_file_path = await get_product_customisations(product_name)
