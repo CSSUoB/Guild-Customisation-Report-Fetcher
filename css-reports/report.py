@@ -10,8 +10,6 @@ from datetime import datetime, timedelta
 if TYPE_CHECKING:
     from http.cookies import Morsel
 
-# CONFIG: Final[dict[str, str]] = dotenv_values(".env")  # type: ignore[assignment]
-
 BASE_HEADERS: Final[Mapping[str, str]] = {
     "Cache-Control": "no-cache",
     "Pragma": "no-cache",
@@ -152,8 +150,8 @@ async def get_product_customisations(product_id_or_name: str, auth_cookie: str, 
 
             # write the rest of the file, but only if the line contains the product
             async for line in file_response.content:
-                if product_id_or_name in line.decode("utf-8"):
+                if product_id_or_name in line.decode("utf-8").split(",")[0]:
                     file.write(line)
-        
+
         return file.name
 
