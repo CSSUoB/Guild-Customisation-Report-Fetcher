@@ -7,7 +7,9 @@ from bs4 import BeautifulSoup
 import re
 from datetime import datetime, timedelta
 
-from dotenv import dotenv_values
+from dotenv import dotenv_values, load_dotenv
+
+load_dotenv()
 
 if TYPE_CHECKING:
     from http.cookies import Morsel
