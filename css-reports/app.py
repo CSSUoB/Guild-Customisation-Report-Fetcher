@@ -24,7 +24,7 @@ async def fetch_customisation_report():
     if not auth_cookie or not organisation_id or not product_name:
         return jsonify({"error": "Missing required parameters."}), 400
     
-    product_name = re.sub(r'[^\W\s]+', '', product_name)
+    product_name = re.sub(r'\W\s', '', product_name)
 
     csv_file_path: str | None = None
 
