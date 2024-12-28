@@ -5,7 +5,6 @@ import aiohttp
 import bs4
 from bs4 import BeautifulSoup
 import re
-import sys
 from datetime import datetime, timedelta
 
 from dotenv import dotenv_values
@@ -13,7 +12,7 @@ from dotenv import dotenv_values
 if TYPE_CHECKING:
     from http.cookies import Morsel
 
-CONFIG: Final[dict[str, str]] = dotenv_values(".env")  # type: ignore[assignment]
+# CONFIG: Final[dict[str, str]] = dotenv_values(".env")  # type: ignore[assignment]
 
 BASE_HEADERS: Final[Mapping[str, str]] = {
     "Cache-Control": "no-cache",
@@ -22,10 +21,10 @@ BASE_HEADERS: Final[Mapping[str, str]] = {
 }
 
 BASE_COOKIES: Final[Mapping[str, str]] = {
-    ".ASPXAUTH": CONFIG["ORGANISATION_ADMIN_TOKEN"],
+    ".ASPXAUTH": dotenv_values(".env")["ORGANISATION_ADMIN_TOKEN"],
 }
 
-ORGANISATION_ID: Final[str] = CONFIG["ORGANISATION_ID"]
+ORGANISATION_ID: Final[str] = dotenv_values(".env")["ORGANISATION_ID"]
 
 SALES_REPORTS_URL: Final[str] = f"https://www.guildofstudents.com/organisation/salesreports/{ORGANISATION_ID}/"
 SALES_FROM_DATE_KEY: Final[str] = "ctl00$ctl00$Main$AdminPageContent$drDateRange$txtFromDate"
@@ -60,12 +59,14 @@ async def get_msl_context(url: str) -> tuple[dict[str, str], dict[str, str]]:
             cookie_morsel: Morsel[str] | None = field_data.cookies.get(cookie)
             if cookie_morsel is not None:
                 cookies[cookie] = cookie_morsel.value
-        cookies[".ASPXAUTH"] = CONFIG["ORGANISATION_ADMIN_TOKEN"]
+        cookies[".ASPXAUTH"] = dotenv_values(".env")["ORGANISATION_ADMIN_TOKEN"]
 
     if "Login" in data_response.title.string:  # type: ignore[union-attr, operator]
         print("Redirected to login page!")
         print(url)
-        sys.exit(1)
+        raise ValueError("Redirected to login page!")
+
+    print(f"Successfully retrieved the requested context with url: {url}")
 
     return data_fields, cookies
 
@@ -106,23 +107,23 @@ async def fetch_report_url_and_cookies() -> tuple[str | None, dict[str, str]]:  
     if not report_viewer_div or report_viewer_div.text.strip() == "":
         print("Failed to load the reports.")
         print(report_viewer_div)
-        sys.exit(1)
+        raise ValueError("Failed to load the reports.")
 
     if "no transactions" in response_html:
         print("No transactions were found!")
-        return None, {}
+        raise ValueError("No transactions were found!")
 
     match = re.search(r'ExportUrlBase":"(.*?)"', response_html)
     if not match:
         print("Failed to find the report export url from the http response.")
         print(response_html)
-        return None, {}
+        raise ValueError("Failed to find the report export url from the http response.")
 
     urlbase: str = match.group(1).replace(r"\u0026", "&").replace("\\/", "/")
     if not urlbase:
         print("Failed to construct report url!")
         print(match)
-        return None, {}
+        raise ValueError("Failed to construct report url!")
 
     return f"https://guildofstudents.com/{urlbase}CSV", cookies
 
@@ -134,7 +135,7 @@ async def get_all_customisations() -> None:
 
     if report_url is None:
         print("Failed to retrieve customisations report URL.")
-        return
+        raise ValueError("Failed to retrieve customisations report URL.")
 
     file_session: aiohttp.ClientSession = aiohttp.ClientSession(
         headers=BASE_HEADERS,
@@ -144,19 +145,19 @@ async def get_all_customisations() -> None:
         if file_response.status != 200:
             print("Customisation report file session returned a non 200 status code.")
             print(file_response)
-            return
+            raise ValueError("Customisation report file session returned a non 200 status code.")
 
         # save the csv file
         with open("full_historical_customisations.csv", "wb") as file:
             file.write(await file_response.read())
 
 
-async def get_product_customisations(product_id_or_name: str) -> None:
+async def get_product_customisations(product_id_or_name: str) -> str:
     report_url, cookies = await fetch_report_url_and_cookies()
 
     if report_url is None:
         print("Failed to retrieve customisations report URL.")
-        return
+        raise ValueError("Failed to retrieve customisations report URL.")
     
     file_session: aiohttp.ClientSession = aiohttp.ClientSession(
         headers=BASE_HEADERS,
@@ -166,7 +167,7 @@ async def get_product_customisations(product_id_or_name: str) -> None:
         if file_response.status != 200:
             print("Customisation report file session returned a non 200 status code.")
             print(file_response)
-            return
+            raise ValueError("Customisation report file session returned a non 200 status code.")
 
         # save the csv file
         with open(f"{product_id_or_name.lower().replace(" ", "_")}_customisations.csv", "wb") as file:
@@ -178,11 +179,6 @@ async def get_product_customisations(product_id_or_name: str) -> None:
             async for line in file_response.content:
                 if product_id_or_name in line.decode("utf-8"):
                     file.write(line)
-
-
-if __name__ == '__main__':
-    import asyncio
-    
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(get_product_customisations("Ball 2024"))
+        
+        return file.name
 
