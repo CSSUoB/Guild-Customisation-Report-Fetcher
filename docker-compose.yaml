@@ -1,0 +1,14 @@
+services:
+  css-reports:
+    build:
+      context: css-reports
+    restart: unless-stopped
+    container_name: css-reports-container
+    stop_signal: SIGINT
+    networks:
+      - proxy-apps
+
+networks:
+  proxy-apps:
+    name: proxy-apps
+    external: true
