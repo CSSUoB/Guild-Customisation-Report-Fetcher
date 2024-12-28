@@ -170,6 +170,8 @@ async def get_product_customisations(product_id_or_name: str) -> str:
             print("Customisation report file session returned a non 200 status code.")
             print(file_response)
             raise ValueError("Customisation report file session returned a non 200 status code.")
+        
+        print("Successfully retrieved customisation report: " + product_id_or_name)
 
         # save the csv file
         with open(f"{product_id_or_name.lower().replace(" ", "_")}_customisations.csv", "wb") as file:
