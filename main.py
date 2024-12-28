@@ -2,14 +2,18 @@
 
 from typing import Final, Mapping, TYPE_CHECKING
 import aiohttp
+import bs4
 from bs4 import BeautifulSoup
+import re
+import sys
+from datetime import datetime, timedelta
 
-
+from dotenv import dotenv_values
 
 if TYPE_CHECKING:
     from http.cookies import Morsel
 
-
+CONFIG: Final[dict[str, str]] = dotenv_values(".env")  # type: ignore[assignment]
 
 BASE_HEADERS: Final[Mapping[str, str]] = {
     "Cache-Control": "no-cache",
@@ -18,14 +22,23 @@ BASE_HEADERS: Final[Mapping[str, str]] = {
 }
 
 BASE_COOKIES: Final[Mapping[str, str]] = {
-    ".ASPXAUTH": settings["MEMBERS_LIST_AUTH_SESSION_COOKIE"],
+    ".ASPXAUTH": CONFIG["ORGANISATION_ADMIN_TOKEN"],
 }
 
+ORGANISATION_ID: Final[str] = CONFIG["ORGANISATION_ID"]
+
+SALES_REPORTS_URL: Final[str] = f"https://www.guildofstudents.com/organisation/salesreports/{ORGANISATION_ID}/"
+SALES_FROM_DATE_KEY: Final[str] = "ctl00$ctl00$Main$AdminPageContent$drDateRange$txtFromDate"
+SALES_FROM_TIME_KEY: Final[str] = "ctl00$ctl00$Main$AdminPageContent$drDateRange$txtFromTime"
+SALES_TO_DATE_KEY: Final[str] = "ctl00$ctl00$Main$AdminPageContent$drDateRange$txtToDate"
+SALES_TO_TIME_KEY: Final[str] = "ctl00$ctl00$Main$AdminPageContent$drDateRange$txtToTime"
+
+TODAYS_DATE: datetime = datetime.now()
+from_date: datetime = TODAYS_DATE - timedelta(weeks=52)
+to_date: datetime = TODAYS_DATE + timedelta(weeks=52)
 
 
-
-
-def get_msl_context(url: str) -> tuple[dict[str, str], dict[str, str]]:
+async def get_msl_context(url: str) -> tuple[dict[str, str], dict[str, str]]:
     """Get the required context headers, data and cookies to make a request to MSL."""
     http_session: aiohttp.ClientSession = aiohttp.ClientSession(
         headers=BASE_HEADERS,
@@ -47,8 +60,80 @@ def get_msl_context(url: str) -> tuple[dict[str, str], dict[str, str]]:
             cookie_morsel: Morsel[str] | None = field_data.cookies.get(cookie)
             if cookie_morsel is not None:
                 cookies[cookie] = cookie_morsel.value
-        cookies[".ASPXAUTH"] = settings["MEMBERS_LIST_AUTH_SESSION_COOKIE"]
+        cookies[".ASPXAUTH"] = CONFIG["ORGANISATION_ADMIN_TOKEN"]
+
+    if "Login" in data_response.title.string:  # type: ignore[union-attr, operator]
+        print("Redirected to login page!")
+        print(url)
+        sys.exit(1)
 
     return data_fields, cookies
+
+
+async def fetch_report_url_and_cookies() -> tuple[str | None, dict[str, str]]:  # noqa: E501
+    """Fetch the specified report from the guild website."""
+    data_fields, cookies = await get_msl_context(url=SALES_REPORTS_URL)
+
+    form_data: dict[str, str] = {
+        SALES_FROM_DATE_KEY: from_date.strftime("%d/%m/%Y"),
+        SALES_FROM_TIME_KEY: from_date.strftime("%H:%M"),
+        SALES_TO_DATE_KEY: to_date.strftime("%d/%m/%Y"),
+        SALES_TO_TIME_KEY: to_date.strftime("%H:%M"),
+        "__EVENTTARGET": "ctl00$ctl00$Main$AdminPageContent$lbCustomisations",
+        "__EVENTARGUMENT": "",
+        "ctl00$ctl00$search$txtSearchStr": "",
+        "ctl00$ctl00$ctl17$txtSearchStr": "",
+    }
+
+    data_fields.pop("ctl00$ctl00$search$btnSubmit")
+
+    data_fields.update(form_data)
+
+    session_v2: aiohttp.ClientSession = aiohttp.ClientSession(
+        headers=BASE_HEADERS,
+        cookies=cookies,
+    )
+    async with session_v2, session_v2.post(url=SALES_REPORTS_URL, data=data_fields) as http_response:  # noqa: E501
+        if http_response.status != 200:
+            print("Returned a non 200 status code!!")
+            print(http_response)
+            return None, {}
+
+        response_html: str = await http_response.text()
+
+    print(data_fields)
+    # get the report viewer div
+    soup = BeautifulSoup(response_html, "html.parser")
+    report_viewer_div: bs4.Tag | bs4.NavigableString | None = soup.find("div", {"id": "report_viewer_wrapper"})
+    if not report_viewer_div or report_viewer_div.text.strip() == "":
+        print("Failed to load the reports.")
+        print(report_viewer_div)
+        sys.exit(1)
+
+    if "no transactions" in response_html:
+        print("No transactions were found!")
+        return None, {}
+
+    match = re.search(r'ExportUrlBase":"(.*?)"', response_html)
+    if not match:
+        print("Failed to find the report export url from the http response.")
+        print(response_html)
+        return None, {}
+
+    urlbase: str = match.group(1).replace(r"\u0026", "&").replace("\\/", "/")
+    if not urlbase:
+        print("Failed to construct report url!")
+        print(match)
+        return None, {}
+
+    return f"https://guildofstudents.com/{urlbase}CSV", cookies
+
+
+if __name__ == '__main__':
+    import asyncio
+
+    loop = asyncio.get_event_loop()
+    values = loop.run_until_complete(fetch_report_url_and_cookies())
+    print(values)
 
 
