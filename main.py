@@ -34,7 +34,7 @@ SALES_TO_DATE_KEY: Final[str] = "ctl00$ctl00$Main$AdminPageContent$drDateRange$t
 SALES_TO_TIME_KEY: Final[str] = "ctl00$ctl00$Main$AdminPageContent$drDateRange$txtToTime"
 
 TODAYS_DATE: datetime = datetime.now()
-from_date: datetime = TODAYS_DATE - timedelta(weeks=52)
+from_date: datetime = TODAYS_DATE - timedelta(weeks=1200)
 to_date: datetime = TODAYS_DATE + timedelta(weeks=52)
 
 
@@ -81,11 +81,10 @@ async def fetch_report_url_and_cookies() -> tuple[str | None, dict[str, str]]:  
         SALES_TO_TIME_KEY: to_date.strftime("%H:%M"),
         "__EVENTTARGET": "ctl00$ctl00$Main$AdminPageContent$lbCustomisations",
         "__EVENTARGUMENT": "",
-        "ctl00$ctl00$search$txtSearchStr": "",
-        "ctl00$ctl00$ctl17$txtSearchStr": "",
     }
 
     data_fields.pop("ctl00$ctl00$search$btnSubmit")
+    data_fields.pop("ctl00$ctl00$ctl17$btnSubmit")
 
     data_fields.update(form_data)
 
@@ -101,7 +100,6 @@ async def fetch_report_url_and_cookies() -> tuple[str | None, dict[str, str]]:  
 
         response_html: str = await http_response.text()
 
-    print(data_fields)
     # get the report viewer div
     soup = BeautifulSoup(response_html, "html.parser")
     report_viewer_div: bs4.Tag | bs4.NavigableString | None = soup.find("div", {"id": "report_viewer_wrapper"})
@@ -129,11 +127,62 @@ async def fetch_report_url_and_cookies() -> tuple[str | None, dict[str, str]]:  
     return f"https://guildofstudents.com/{urlbase}CSV", cookies
 
 
+
+async def get_all_customisations() -> None:
+    """Get the set of product customisations for a given product ID, checking the past year."""
+    report_url, cookies = await fetch_report_url_and_cookies()
+
+    if report_url is None:
+        print("Failed to retrieve customisations report URL.")
+        return
+
+    file_session: aiohttp.ClientSession = aiohttp.ClientSession(
+        headers=BASE_HEADERS,
+        cookies=cookies,
+    )
+    async with file_session, file_session.get(url=report_url) as file_response:
+        if file_response.status != 200:
+            print("Customisation report file session returned a non 200 status code.")
+            print(file_response)
+            return
+
+        # save the csv file
+        with open("full_historical_customisations.csv", "wb") as file:
+            file.write(await file_response.read())
+
+
+async def get_product_customisations(product_id_or_name: str) -> None:
+    report_url, cookies = await fetch_report_url_and_cookies()
+
+    if report_url is None:
+        print("Failed to retrieve customisations report URL.")
+        return
+    
+    file_session: aiohttp.ClientSession = aiohttp.ClientSession(
+        headers=BASE_HEADERS,
+        cookies=cookies,
+    )
+    async with file_session, file_session.get(url=report_url) as file_response:
+        if file_response.status != 200:
+            print("Customisation report file session returned a non 200 status code.")
+            print(file_response)
+            return
+
+        # save the csv file
+        with open(f"{product_id_or_name.lower().replace(" ", "_")}_customisations.csv", "wb") as file:
+            # write the first 5 lines
+            for i in range(5):
+                file.write(await file_response.content.readline())
+
+            # write the rest of the file, but only if the line contains the product
+            async for line in file_response.content:
+                if product_id_or_name in line.decode("utf-8"):
+                    file.write(line)
+
+
 if __name__ == '__main__':
     import asyncio
-
+    
     loop = asyncio.get_event_loop()
-    values = loop.run_until_complete(fetch_report_url_and_cookies())
-    print(values)
-
+    loop.run_until_complete(get_product_customisations("Ball 2024"))
 
