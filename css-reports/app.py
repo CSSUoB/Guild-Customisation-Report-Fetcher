@@ -17,6 +17,10 @@ async def fetch_customisation_report():
     organisation_id = request.args.get('organisation_id')
     product_name = request.args.get('product_name')
 
+    # print("Auth cookie: " + auth_cookie)
+    print("Organisation ID: " + organisation_id)
+    print("Product Name: " + product_name)
+
     # Validate parameters
     if not auth_cookie or not organisation_id or not product_name:
         return jsonify({"error": "Missing required parameters."}), 400
