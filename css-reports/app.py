@@ -40,7 +40,7 @@ async def fetch_customisation_report():
         return jsonify({"error": str(e)}), 500
     finally:
         # Clean up the generated file
-        if os.path.exists(csv_file_path):
+        if csv_file_path and os.path.exists(csv_file_path):
             os.remove(csv_file_path)
 
 if __name__ == '__main__':
