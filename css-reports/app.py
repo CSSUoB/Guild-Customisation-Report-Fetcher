@@ -2,6 +2,7 @@ from flask import Flask, request, send_file, jsonify, redirect
 from report import get_product_customisations
 from dotenv import set_key
 import os
+import re
 
 app = Flask("css-reports")
 
@@ -16,11 +17,11 @@ async def fetch_customisation_report():
     organisation_id = request.args.get('organisation_id')
     product_name = request.args.get('product_name')
 
-    print("Auth cookie: " + auth_cookie)
-
     # Validate parameters
-    if not auth_cookie or not organisation_id:
+    if not auth_cookie or not organisation_id or not product_name:
         return jsonify({"error": "Missing required parameters."}), 400
+    
+    product_name = re.sub(r'\W+', '', product_name)
 
     set_key('.env', 'ORGANISATION_ADMIN_TOKEN', auth_cookie)
     set_key('.env', 'ORGANISATION_ID', organisation_id)
