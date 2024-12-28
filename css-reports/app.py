@@ -3,7 +3,7 @@ from report import get_product_customisations
 from dotenv import set_key
 import os
 
-app = Flask(__name__)
+app = Flask("css-reports")
 
 @app.route('/')
 def hello():
