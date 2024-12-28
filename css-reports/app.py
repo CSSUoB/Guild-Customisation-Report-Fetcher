@@ -1,9 +1,13 @@
-from flask import Flask, request, send_file, jsonify
+from flask import Flask, request, send_file, jsonify, redirect
 from report import get_product_customisations
 from dotenv import set_key
 import os
 
 app = Flask(__name__)
+
+@app.route('/')
+def hello():
+    return redirect("https://cssbham.com", code=302)
 
 @app.route('/customisation_report', methods=['GET'])
 async def fetch_customisation_report():
