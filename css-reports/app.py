@@ -9,6 +9,10 @@ app = Flask("css-reports")
 def hello():
     return redirect("https://cssbham.com", code=302)
 
+@app.errorhandler(404)
+def page_not_found(e):
+    return redirect("https://cssbham.com", code=302)
+
 @app.route('/customisation_report', methods=['GET'])
 async def fetch_customisation_report():
     # Retrieve query parameters
