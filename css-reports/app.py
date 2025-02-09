@@ -1,4 +1,4 @@
-from flask import Flask, Response, request, send_file, jsonify, redirect, after_this_request
+from flask import Flask, request, send_file, jsonify, redirect
 from report import get_product_customisations
 import os
 import re
@@ -41,15 +41,13 @@ async def fetch_customisation_report():
             return jsonify({"error": "Failed to generate the customisation report"}), 500
 
         # Return the file as a response
-        print("return the file")
-        response: Response =  send_file(csv_file_path, as_attachment=True)
-        @after_this_request
-        def remove_file(response) -> None:
-            os.remove(csv_file_path)
-        return response
+        return send_file(csv_file_path, as_attachment=True)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
+    finally:
+        # Clean up the generated file
+        if csv_file_path and os.path.exists(csv_file_path):
+            os.remove(csv_file_path)
 
 if __name__ == '__main__':
     # from waitress import serve
