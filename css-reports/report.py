@@ -46,8 +46,9 @@ async def get_msl_context(url: str, auth_cookie: str) -> tuple[dict[str, str], d
         )
 
         for field in data_response.find_all(name="input"):
-            if field.get("name") and field.get("value"):
-                data_fields[field.get("name")] = field.get("value")
+            if isinstance(field, bs4.Tag):
+                if field.get("name") and field.get("value"):
+                    data_fields[str(field.get("name"))] = str(field.get("value"))
 
         for cookie in field_data.cookies:
             cookie_morsel: Morsel[str] | None = field_data.cookies.get(cookie)
@@ -98,7 +99,7 @@ async def fetch_report_url_and_cookies(auth_cookie: str, org_id: str) -> tuple[s
 
     # get the report viewer div
     soup = BeautifulSoup(response_html, "html.parser")
-    report_viewer_div: bs4.Tag | bs4.NavigableString | None = soup.find("div", {"id": "report_viewer_wrapper"})
+    report_viewer_div: bs4.PageElement | bs4.Tag | bs4.NavigableString | None = soup.find("div", {"id": "report_viewer_wrapper"})
     if not report_viewer_div or report_viewer_div.text.strip() == "":
         print("Failed to load the reports.")
         print(report_viewer_div)
