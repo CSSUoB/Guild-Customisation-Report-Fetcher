@@ -77,7 +77,6 @@ async def fetch_report_url_and_cookies(auth_cookie: str, org_id: str) -> tuple[s
         SALES_TO_TIME_KEY: to_date.strftime("%H:%M"),
         "__EVENTTARGET": "ctl00$ctl00$Main$AdminPageContent$lbCustomisations",
         "__EVENTARGUMENT": "",
-        "ctl00$ctl00$ctl16$tsNewAdminSkin$cb1": "on",
     }
 
     # data_fields.pop("ctl00$ctl00$search$btnSubmit")
