@@ -5,7 +5,7 @@ import aiohttp
 import bs4
 from bs4 import BeautifulSoup
 import re
-from datetime import datetime, timedelta
+from datetime import datetime
 
 if TYPE_CHECKING:
     from http.cookies import Morsel
@@ -20,10 +20,6 @@ SALES_FROM_DATE_KEY: Final[str] = "ctl00$ctl00$Main$AdminPageContent$drDateRange
 SALES_FROM_TIME_KEY: Final[str] = "ctl00$ctl00$Main$AdminPageContent$drDateRange$txtFromTime"
 SALES_TO_DATE_KEY: Final[str] = "ctl00$ctl00$Main$AdminPageContent$drDateRange$txtToDate"
 SALES_TO_TIME_KEY: Final[str] = "ctl00$ctl00$Main$AdminPageContent$drDateRange$txtToTime"
-
-TODAYS_DATE: datetime = datetime.now()
-from_date: datetime = TODAYS_DATE - timedelta(weeks=1200)
-to_date: datetime = TODAYS_DATE + timedelta(weeks=52)
 
 
 async def get_msl_context(url: str, auth_cookie: str) -> tuple[dict[str, str], dict[str, str]]:
@@ -66,7 +62,12 @@ async def get_msl_context(url: str, auth_cookie: str) -> tuple[dict[str, str], d
     return data_fields, cookies
 
 
-async def fetch_report_url_and_cookies(auth_cookie: str, org_id: str) -> tuple[str | None, dict[str, str]]:  # noqa: E501
+async def fetch_report_url_and_cookies(
+        auth_cookie: str,
+        org_id: str,
+        from_date: datetime, 
+        to_date: datetime,
+    ) -> tuple[str | None, dict[str, str]]:
     """Fetch the specified report from the guild website."""
     SALES_REPORTS_URL: Final[str] = (f"https://www.guildofstudents.com/organisation/salesreports/{org_id}/")
     data_fields, cookies = await get_msl_context(
@@ -129,10 +130,13 @@ async def fetch_report_url_and_cookies(auth_cookie: str, org_id: str) -> tuple[s
     return f"https://guildofstudents.com/{urlbase}CSV", cookies
 
 
-async def get_product_customisations(product_id_or_name: str, auth_cookie: str, org_id: str) -> str:
+async def get_product_customisations(product_id_or_name: str, auth_cookie: str, org_id: str, from_date_input: datetime, to_date_input: datetime) -> str:
+    """Get the customisation report for a specific product."""
     report_url, cookies = await fetch_report_url_and_cookies(
         auth_cookie=auth_cookie,
-        org_id=org_id
+        org_id=org_id,
+        from_date=from_date_input,
+        to_date=to_date_input,
     )
 
     if report_url is None:

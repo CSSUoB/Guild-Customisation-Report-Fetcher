@@ -1,5 +1,6 @@
 from flask import Flask, request, send_file, jsonify, redirect
 from report import get_product_customisations
+from datetime import datetime
 import os
 import re
 
@@ -24,6 +25,8 @@ async def fetch_customisation_report():
     organisation_id: str | None = request.args.get("organisation_id")
     product_name: str | None = request.args.get("product_name")
     product_names: str | None = request.args.get("product_names")
+    start_date: str | None = request.args.get("start_date")
+    end_date: str | None = request.args.get("end_date")
 
     # print("Auth cookie: " + auth_cookie)
     print(f"Organisation ID: {organisation_id}")
@@ -37,6 +40,15 @@ async def fetch_customisation_report():
 
     if product_name and product_names:
         return jsonify({"error": "Both product_name and product_names cannot be provided."}), 400
+    
+    start_date_dt: datetime
+    end_date_dt: datetime
+
+    try:
+        start_date_dt = datetime.strptime(start_date or "2000-01-01", "%Y-%m-%d")
+        end_date_dt = datetime.strptime(end_date or "2100-01-01", "%Y-%m-%d")
+    except ValueError:
+        return jsonify({"error": "Invalid date format. Use YYYY-MM-DD."}), 400
 
     name_or_id: str = product_name or product_names  # type: ignore[assignment]
     name_or_id = re.sub(r"\W\s", "", name_or_id)
@@ -49,6 +61,8 @@ async def fetch_customisation_report():
             product_id_or_name=name_or_id,
             auth_cookie=auth_cookie,
             org_id=organisation_id,
+            from_date_input=start_date_dt,
+            to_date_input=end_date_dt,
         )
 
         if not csv_file_path:
