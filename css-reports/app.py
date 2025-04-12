@@ -29,7 +29,6 @@ async def fetch_customisation_report():
     print(f"Organisation ID: {organisation_id}")
     print(f"Product Name: {product_name}")
 
-    # Validate parameters
     if (not auth_cookie or not organisation_id):
         return jsonify({"error": "An auth token and organisation id are required."}), 400
     
@@ -37,9 +36,7 @@ async def fetch_customisation_report():
         return jsonify({"error": "Either product_name or product_names is required."}), 400
 
     if product_name and product_names:
-        return jsonify(
-            {"error": "Both product_name and product_names cannot be provided."}
-        ), 400
+        return jsonify({"error": "Both product_name and product_names cannot be provided."}), 400
 
     name_or_id: str = product_name or product_names  # type: ignore[assignment]
     name_or_id = re.sub(r"\W\s", "", name_or_id)
