@@ -10,7 +10,8 @@ def hello():
     return redirect("https://cssbham.com", code=302)
 
 @app.errorhandler(404)
-def page_not_found(e):
+def page_not_found(e: Exception | int):
+    print(e)
     return redirect("https://cssbham.com", code=302)
 
 @app.route('/customisation_report', methods=['GET'])
