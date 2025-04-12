@@ -38,7 +38,7 @@ async def get_msl_context(url: str, auth_cookie: str) -> tuple[dict[str, str], d
         cookies=BASE_COOKIES,
     )
     data_fields: dict[str, str] = {}
-    cookies: dict[str ,str] = {}
+    cookies: dict[str, str] = {}
     async with http_session, http_session.get(url=url) as field_data:
         data_response = BeautifulSoup(
             markup=await field_data.text(),
@@ -68,8 +68,11 @@ async def get_msl_context(url: str, auth_cookie: str) -> tuple[dict[str, str], d
 
 async def fetch_report_url_and_cookies(auth_cookie: str, org_id: str) -> tuple[str | None, dict[str, str]]:  # noqa: E501
     """Fetch the specified report from the guild website."""
-    SALES_REPORTS_URL: Final[str] = f"https://www.guildofstudents.com/organisation/salesreports/{org_id}/"
-    data_fields, cookies = await get_msl_context(url=SALES_REPORTS_URL, auth_cookie=auth_cookie)
+    SALES_REPORTS_URL: Final[str] = (f"https://www.guildofstudents.com/organisation/salesreports/{org_id}/")
+    data_fields, cookies = await get_msl_context(
+        url=SALES_REPORTS_URL,
+        auth_cookie=auth_cookie
+    )
 
     form_data: dict[str, str] = {
         SALES_FROM_DATE_KEY: from_date.strftime("%d/%m/%Y"),
@@ -99,7 +102,9 @@ async def fetch_report_url_and_cookies(auth_cookie: str, org_id: str) -> tuple[s
 
     # get the report viewer div
     soup = BeautifulSoup(response_html, "html.parser")
-    report_viewer_div: bs4.PageElement | bs4.Tag | bs4.NavigableString | None = soup.find("div", {"id": "report_viewer_wrapper"})
+    report_viewer_div: bs4.PageElement | bs4.Tag | bs4.NavigableString | None = (
+        soup.find("div", {"id": "report_viewer_wrapper"})
+    )
     if not report_viewer_div or report_viewer_div.text.strip() == "":
         print("Failed to load the reports.")
         print(report_viewer_div)
@@ -125,12 +130,15 @@ async def fetch_report_url_and_cookies(auth_cookie: str, org_id: str) -> tuple[s
 
 
 async def get_product_customisations(product_id_or_name: str, auth_cookie: str, org_id: str) -> str:
-    report_url, cookies = await fetch_report_url_and_cookies(auth_cookie=auth_cookie, org_id=org_id)
+    report_url, cookies = await fetch_report_url_and_cookies(
+        auth_cookie=auth_cookie,
+        org_id=org_id
+    )
 
     if report_url is None:
         print("Failed to retrieve customisations report URL.")
         raise ValueError("Failed to retrieve customisations report URL.")
-    
+
     file_session: aiohttp.ClientSession = aiohttp.ClientSession(
         headers=BASE_HEADERS,
         cookies=cookies,
@@ -140,7 +148,7 @@ async def get_product_customisations(product_id_or_name: str, auth_cookie: str, 
             print("Customisation report file session returned a non 200 status code.")
             print(file_response)
             raise ValueError("Customisation report file session returned a non 200 status code.")
-        
+
         print("Successfully retrieved customisation report: " + product_id_or_name)
 
         # save the csv file
