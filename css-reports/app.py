@@ -21,8 +21,8 @@ async def fetch_customisation_report():
     product_name = request.args.get('product_name')
 
     # print("Auth cookie: " + auth_cookie)
-    print("Organisation ID: " + organisation_id)
-    print("Product Name: " + product_name)
+    print(f"Organisation ID: {organisation_id}")
+    print(f"Product Name: {product_name}")
 
     # Validate parameters
     if not auth_cookie or not organisation_id or not product_name:
