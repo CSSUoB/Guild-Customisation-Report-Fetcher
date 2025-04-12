@@ -63,17 +63,14 @@ async def get_msl_context(url: str, auth_cookie: str) -> tuple[dict[str, str], d
 
 
 async def fetch_report_url_and_cookies(
-        auth_cookie: str,
-        org_id: str,
-        from_date: datetime, 
-        to_date: datetime,
-    ) -> tuple[str | None, dict[str, str]]:
+    auth_cookie: str,
+    org_id: str,
+    from_date: datetime,
+    to_date: datetime,
+) -> tuple[str | None, dict[str, str]]:
     """Fetch the specified report from the guild website."""
     SALES_REPORTS_URL: Final[str] = (f"https://www.guildofstudents.com/organisation/salesreports/{org_id}/")
-    data_fields, cookies = await get_msl_context(
-        url=SALES_REPORTS_URL,
-        auth_cookie=auth_cookie
-    )
+    data_fields, cookies = await get_msl_context(url=SALES_REPORTS_URL, auth_cookie=auth_cookie)
 
     form_data: dict[str, str] = {
         SALES_FROM_DATE_KEY: from_date.strftime("%d/%m/%Y"),
@@ -93,7 +90,7 @@ async def fetch_report_url_and_cookies(
         headers=BASE_HEADERS,
         cookies=cookies,
     )
-    async with session_v2, session_v2.post(url=SALES_REPORTS_URL, data=data_fields) as http_response:  # noqa: E501
+    async with (session_v2,session_v2.post(url=SALES_REPORTS_URL, data=data_fields) as http_response):  # noqa: E501
         if http_response.status != 200:
             print("Returned a non 200 status code!!")
             print(http_response)
@@ -130,7 +127,13 @@ async def fetch_report_url_and_cookies(
     return f"https://guildofstudents.com/{urlbase}CSV", cookies
 
 
-async def get_product_customisations(product_id_or_name: str, auth_cookie: str, org_id: str, from_date_input: datetime, to_date_input: datetime) -> str:
+async def get_product_customisations(
+    product_id_or_name: str,
+    auth_cookie: str,
+    org_id: str,
+    from_date_input: datetime,
+    to_date_input: datetime,
+) -> str:
     """Get the customisation report for a specific product."""
     report_url, cookies = await fetch_report_url_and_cookies(
         auth_cookie=auth_cookie,
