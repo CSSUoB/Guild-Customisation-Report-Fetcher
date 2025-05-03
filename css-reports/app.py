@@ -34,13 +34,19 @@ async def fetch_customisation_report():
     print(f"Product Name: {product_name}")
 
     if not auth_cookie or not organisation_id:
-        return jsonify({"error": "An auth token and organisation id are required."}), 400
+        return jsonify(
+            {"error": "An auth token and organisation id are required."}
+        ), 400
 
     if (not product_name) and (not product_names):
-        return jsonify({"error": "Either product_name or product_names is required."}), 400
+        return jsonify(
+            {"error": "Either product_name or product_names is required."}
+        ), 400
 
     if product_name and product_names:
-        return jsonify({"error": "Both product_name and product_names cannot be provided."}), 400
+        return jsonify(
+            {"error": "Both product_name and product_names cannot be provided."}
+        ), 400
 
     if not report_type:
         report_type = "Customisations"
