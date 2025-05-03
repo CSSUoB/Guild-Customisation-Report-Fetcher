@@ -45,6 +45,9 @@ async def fetch_customisation_report():
     if not report_type:
         report_type = "Customisations"
 
+    if report_type not in ["Customisations", "Purchasers", "Sales"]:
+        return jsonify({"error": "Invalid report type specified."}), 400
+
     start_date_dt: datetime
     end_date_dt: datetime
 
