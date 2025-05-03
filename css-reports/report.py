@@ -77,7 +77,7 @@ async def fetch_report_url_and_cookies(
         SALES_FROM_TIME_KEY: from_date.strftime("%H:%M"),
         SALES_TO_DATE_KEY: to_date.strftime("%d/%m/%Y"),
         SALES_TO_TIME_KEY: to_date.strftime("%H:%M"),
-        "__EVENTTARGET": "ctl00$ctl00$Main$AdminPageContent$lbCustomisations",
+        "__EVENTTARGET": "ctl00$ctl00$Main$AdminPageContent$lbPurchasers",
         "__EVENTARGUMENT": "",
     }
 
