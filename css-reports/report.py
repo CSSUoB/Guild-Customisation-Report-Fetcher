@@ -67,6 +67,7 @@ async def fetch_report_url_and_cookies(
     org_id: str,
     from_date: datetime,
     to_date: datetime,
+    report_type: str,
 ) -> tuple[str | None, dict[str, str]]:
     """Fetch the specified report from the guild website."""
     SALES_REPORTS_URL: Final[str] = (f"https://www.guildofstudents.com/organisation/salesreports/{org_id}/")
@@ -77,7 +78,7 @@ async def fetch_report_url_and_cookies(
         SALES_FROM_TIME_KEY: from_date.strftime("%H:%M"),
         SALES_TO_DATE_KEY: to_date.strftime("%d/%m/%Y"),
         SALES_TO_TIME_KEY: to_date.strftime("%H:%M"),
-        "__EVENTTARGET": "ctl00$ctl00$Main$AdminPageContent$lbPurchasers",
+        "__EVENTTARGET": f"ctl00$ctl00$Main$AdminPageContent$lb{report_type}",
         "__EVENTARGUMENT": "",
     }
 
@@ -133,6 +134,7 @@ async def get_product_customisations(
     org_id: str,
     from_date_input: datetime,
     to_date_input: datetime,
+    report_type: str,
 ) -> str:
     """Get the customisation report for a specific product."""
     report_url, cookies = await fetch_report_url_and_cookies(
@@ -140,6 +142,7 @@ async def get_product_customisations(
         org_id=org_id,
         from_date=from_date_input,
         to_date=to_date_input,
+        report_type=report_type,
     )
 
     if report_url is None:

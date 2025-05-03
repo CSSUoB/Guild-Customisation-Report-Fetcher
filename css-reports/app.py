@@ -23,6 +23,7 @@ async def fetch_customisation_report():
     # Retrieve query parameters
     auth_cookie: str | None = request.args.get("auth_cookie")
     organisation_id: str | None = request.args.get("organisation_id")
+    report_type: str | None = request.args.get("report_type")
     product_name: str | None = request.args.get("product_name")
     product_names: str | None = request.args.get("product_names")
     start_date: str | None = request.args.get("start_date")
@@ -40,6 +41,9 @@ async def fetch_customisation_report():
 
     if product_name and product_names:
         return jsonify({"error": "Both product_name and product_names cannot be provided."}), 400
+    
+    if not report_type:
+        report_type = "Customisations"
 
     start_date_dt: datetime
     end_date_dt: datetime
@@ -63,6 +67,7 @@ async def fetch_customisation_report():
             org_id=organisation_id,
             from_date_input=start_date_dt,
             to_date_input=end_date_dt,
+            report_type=report_type,
         )
 
         if not csv_file_path:
