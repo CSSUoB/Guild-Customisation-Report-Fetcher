@@ -41,7 +41,7 @@ async def fetch_customisation_report():
 
     if product_name and product_names:
         return jsonify({"error": "Both product_name and product_names cannot be provided."}), 400
-    
+
     if not report_type:
         report_type = "Customisations"
 
