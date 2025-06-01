@@ -29,7 +29,6 @@ async def fetch_customisation_report():
     start_date: str | None = request.args.get("start_date")
     end_date: str | None = request.args.get("end_date")
 
-    # print("Auth cookie: " + auth_cookie)
     print(f"Organisation ID: {organisation_id}")
     print(f"Product Name: {product_name}")
 
