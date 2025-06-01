@@ -105,10 +105,9 @@ async def fetch_report_url_and_cookies(
         headers=BASE_HEADERS,
         cookies=cookies,
     )
-    async with (
-        session_v2,
-        session_v2.post(url=SALES_REPORTS_URL, data=data_fields) as http_response,
-    ):
+
+    async with (session_v2, session_v2.post(url=SALES_REPORTS_URL, data=data_fields) as http_response):  # noqa: E501
+
         if http_response.status != 200:
             print("Returned a non 200 status code!!")
             print(http_response)
@@ -116,7 +115,6 @@ async def fetch_report_url_and_cookies(
 
         response_html: str = await http_response.text()
 
-    # get the report viewer div
     soup = BeautifulSoup(response_html, "html.parser")
     report_viewer_div: bs4.PageElement | bs4.Tag | bs4.NavigableString | None = (
         soup.find("div", {"id": "report_viewer_wrapper"})
