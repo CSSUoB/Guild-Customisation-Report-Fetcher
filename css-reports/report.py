@@ -1,11 +1,13 @@
 """Python script to fetch a customisation report from the Guild website."""
 
+import re
+from datetime import datetime
+
 from typing import Final, Mapping, TYPE_CHECKING
 import aiohttp
 import bs4
 from bs4 import BeautifulSoup
-import re
-from datetime import datetime
+
 
 if TYPE_CHECKING:
     from http.cookies import Morsel
@@ -83,9 +85,8 @@ async def fetch_report_url_and_cookies(
     SALES_REPORTS_URL: Final[str] = (
         f"https://www.guildofstudents.com/organisation/salesreports/{org_id}/"
     )
-    data_fields, cookies = await get_msl_context(
-        url=SALES_REPORTS_URL, auth_cookie=auth_cookie
-    )
+
+    data_fields, cookies = await get_msl_context(url=SALES_REPORTS_URL, auth_cookie=auth_cookie)
 
     form_data: dict[str, str] = {
         SALES_FROM_DATE_KEY: from_date.strftime("%d/%m/%Y"),
@@ -105,9 +106,10 @@ async def fetch_report_url_and_cookies(
         headers=BASE_HEADERS,
         cookies=cookies,
     )
-
-    async with (session_v2, session_v2.post(url=SALES_REPORTS_URL, data=data_fields) as http_response):  # noqa: E501
-
+    async with (
+        session_v2,
+        session_v2.post(url=SALES_REPORTS_URL, data=data_fields) as http_response
+    ):
         if http_response.status != 200:
             print("Returned a non 200 status code!!")
             print(http_response)

@@ -1,25 +1,32 @@
-from flask import Flask, request, send_file, jsonify, redirect
-from report import get_product_customisations
+"""Module to handle the incoming http requests and generate reports."""
+
 from datetime import datetime
 import os
 import re
+
+from flask import Flask, request, send_file, jsonify, redirect
+from report import get_product_customisations
+
 
 app = Flask("css-reports")
 
 
 @app.route("/")
 def hello():
+    """Redirect to the main website if no specific route is requested."""
     return redirect("https://cssbham.com", code=302)
 
 
 @app.errorhandler(404)
 def page_not_found(e: Exception | int):
+    """Handle 404 errors by redirecting to the main website."""
     print(e)
     return redirect("https://cssbham.com", code=302)
 
 
 @app.route("/customisation_report", methods=["GET"])
 async def fetch_customisation_report():
+    """Fetch the report based on query parameters."""
     # Retrieve query parameters
     auth_cookie: str | None = request.args.get("auth_cookie")
     organisation_id: str | None = request.args.get("organisation_id")
