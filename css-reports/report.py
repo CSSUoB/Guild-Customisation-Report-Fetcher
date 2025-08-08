@@ -86,7 +86,9 @@ async def fetch_report_url_and_cookies(
         f"https://www.guildofstudents.com/organisation/salesreports/{org_id}/"
     )
 
-    data_fields, cookies = await get_msl_context(url=SALES_REPORTS_URL, auth_cookie=auth_cookie)
+    data_fields, cookies = await get_msl_context(
+        url=SALES_REPORTS_URL, auth_cookie=auth_cookie
+    )
 
     form_data: dict[str, str] = {
         SALES_FROM_DATE_KEY: from_date.strftime("%d/%m/%Y"),
@@ -108,7 +110,7 @@ async def fetch_report_url_and_cookies(
     )
     async with (
         session_v2,
-        session_v2.post(url=SALES_REPORTS_URL, data=data_fields) as http_response
+        session_v2.post(url=SALES_REPORTS_URL, data=data_fields) as http_response,
     ):
         if http_response.status != 200:
             print("Returned a non 200 status code!!")
