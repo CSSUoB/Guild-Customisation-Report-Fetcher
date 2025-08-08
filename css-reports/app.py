@@ -18,9 +18,9 @@ def hello():
 
 
 @app.errorhandler(404)
-def page_not_found(e: Exception | int):
+def page_not_found(exception: Exception | int):
     """Handle 404 errors by redirecting to the main website."""
-    print(e)
+    print(exception)
     return redirect("https://cssbham.com", code=302)
 
 
@@ -93,8 +93,8 @@ async def fetch_customisation_report():
 
         # Return the file as a response
         return send_file(csv_file_path, as_attachment=True)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception as unknown_error:
+        return jsonify({"error": str(unknown_error)}), 500
     finally:
         # Clean up the generated file
         if csv_file_path and os.path.exists(csv_file_path):
