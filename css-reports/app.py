@@ -1,25 +1,32 @@
-from flask import Flask, request, send_file, jsonify, redirect
-from report import get_product_customisations
+"""Module to handle the incoming http requests and generate reports."""
+
 from datetime import datetime
 import os
 import re
+
+from flask import Flask, request, send_file, jsonify, redirect
+from report import get_product_customisations
+
 
 app = Flask("css-reports")
 
 
 @app.route("/")
 def hello():
+    """Redirect to the main website if no specific route is requested."""
     return redirect("https://cssbham.com", code=302)
 
 
 @app.errorhandler(404)
-def page_not_found(e: Exception | int):
-    print(e)
+def page_not_found(exception: Exception | int):
+    """Handle 404 errors by redirecting to the main website."""
+    print(exception)
     return redirect("https://cssbham.com", code=302)
 
 
 @app.route("/customisation_report", methods=["GET"])
 async def fetch_customisation_report():
+    """Fetch the report based on query parameters."""
     # Retrieve query parameters
     auth_cookie: str | None = request.args.get("auth_cookie")
     organisation_id: str | None = request.args.get("organisation_id")
@@ -33,13 +40,19 @@ async def fetch_customisation_report():
     print(f"Product Name: {product_name}")
 
     if not auth_cookie or not organisation_id:
-        return jsonify({"error": "An auth token and organisation id are required."}), 400
+        return jsonify(
+            {"error": "An auth token and organisation id are required."}
+        ), 400
 
     if (not product_name) and (not product_names):
-        return jsonify({"error": "Either product_name or product_names is required."}), 400
+        return jsonify(
+            {"error": "Either product_name or product_names is required."}
+        ), 400
 
     if product_name and product_names:
-        return jsonify({"error": "Both product_name and product_names cannot be provided."}), 400
+        return jsonify(
+            {"error": "Both product_name and product_names cannot be provided."}
+        ), 400
 
     if not report_type:
         report_type = "Customisations"
@@ -80,8 +93,8 @@ async def fetch_customisation_report():
 
         # Return the file as a response
         return send_file(csv_file_path, as_attachment=True)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception as unknown_error:
+        return jsonify({"error": str(unknown_error)}), 500
     finally:
         # Clean up the generated file
         if csv_file_path and os.path.exists(csv_file_path):

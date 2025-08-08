@@ -1,11 +1,13 @@
 """Python script to fetch a customisation report from the Guild website."""
 
+import re
+from datetime import datetime
+
 from typing import Final, Mapping, TYPE_CHECKING
 import aiohttp
 import bs4
 from bs4 import BeautifulSoup
-import re
-from datetime import datetime
+
 
 if TYPE_CHECKING:
     from http.cookies import Morsel
@@ -16,13 +18,23 @@ BASE_HEADERS: Final[Mapping[str, str]] = {
     "Expires": "0",
 }
 
-SALES_FROM_DATE_KEY: Final[str] = "ctl00$ctl00$Main$AdminPageContent$drDateRange$txtFromDate"
-SALES_FROM_TIME_KEY: Final[str] = "ctl00$ctl00$Main$AdminPageContent$drDateRange$txtFromTime"
-SALES_TO_DATE_KEY: Final[str] = "ctl00$ctl00$Main$AdminPageContent$drDateRange$txtToDate"
-SALES_TO_TIME_KEY: Final[str] = "ctl00$ctl00$Main$AdminPageContent$drDateRange$txtToTime"
+SALES_FROM_DATE_KEY: Final[str] = (
+    "ctl00$ctl00$Main$AdminPageContent$drDateRange$txtFromDate"
+)
+SALES_FROM_TIME_KEY: Final[str] = (
+    "ctl00$ctl00$Main$AdminPageContent$drDateRange$txtFromTime"
+)
+SALES_TO_DATE_KEY: Final[str] = (
+    "ctl00$ctl00$Main$AdminPageContent$drDateRange$txtToDate"
+)
+SALES_TO_TIME_KEY: Final[str] = (
+    "ctl00$ctl00$Main$AdminPageContent$drDateRange$txtToTime"
+)
 
 
-async def get_msl_context(url: str, auth_cookie: str) -> tuple[dict[str, str], dict[str, str]]:
+async def get_msl_context(
+    url: str, auth_cookie: str
+) -> tuple[dict[str, str], dict[str, str]]:
     """Get the required context headers, data and cookies to make a request to MSL."""
 
     BASE_COOKIES: Mapping[str, str] = {
@@ -70,8 +82,13 @@ async def fetch_report_url_and_cookies(
     report_type: str,
 ) -> tuple[str | None, dict[str, str]]:
     """Fetch the specified report from the guild website."""
-    SALES_REPORTS_URL: Final[str] = f"https://www.guildofstudents.com/organisation/salesreports/{org_id}/"
-    data_fields, cookies = await get_msl_context(url=SALES_REPORTS_URL, auth_cookie=auth_cookie)
+    SALES_REPORTS_URL: Final[str] = (
+        f"https://www.guildofstudents.com/organisation/salesreports/{org_id}/"
+    )
+
+    data_fields, cookies = await get_msl_context(
+        url=SALES_REPORTS_URL, auth_cookie=auth_cookie
+    )
 
     form_data: dict[str, str] = {
         SALES_FROM_DATE_KEY: from_date.strftime("%d/%m/%Y"),
@@ -91,7 +108,10 @@ async def fetch_report_url_and_cookies(
         headers=BASE_HEADERS,
         cookies=cookies,
     )
-    async with (session_v2, session_v2.post(url=SALES_REPORTS_URL, data=data_fields) as http_response):  # noqa: E501
+    async with (
+        session_v2,
+        session_v2.post(url=SALES_REPORTS_URL, data=data_fields) as http_response,
+    ):
         if http_response.status != 200:
             print("Returned a non 200 status code!!")
             print(http_response)
