@@ -1,0 +1,28 @@
+version: 2
+updates:
+- package-ecosystem: docker
+  directory: "/"
+  schedule:
+    interval: daily
+  groups:
+    deps:
+      patterns:
+        - "*"
+
+- package-ecosystem: pip
+  directory: "/"
+  schedule:
+    interval: daily
+  groups:
+    deps:
+      patterns:
+        - "*"
+
+- package-ecosystem: github-actions
+  directory: "/"
+  schedule:
+    interval: daily
+  groups:
+    gh-actions:
+      patterns:
+        - "*"
