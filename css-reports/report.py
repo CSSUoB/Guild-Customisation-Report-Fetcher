@@ -1,10 +1,14 @@
 """Python script to fetch a customisation report from the Guild website."""
 
 from typing import Final, Mapping, TYPE_CHECKING
+
 import aiohttp
 import bs4
-from bs4 import BeautifulSoup
+import certifi
+import ssl
 import re
+
+from bs4 import BeautifulSoup
 from datetime import datetime
 
 if TYPE_CHECKING:
@@ -22,20 +26,26 @@ SALES_TO_DATE_KEY: Final[str] = "ctl00$ctl00$Main$AdminPageContent$drDateRange$t
 SALES_TO_TIME_KEY: Final[str] = "ctl00$ctl00$Main$AdminPageContent$drDateRange$txtToTime"
 
 
-async def get_msl_context(url: str, auth_cookie: str) -> tuple[dict[str, str], dict[str, str]]:
+ssl_context: ssl.SSLContext = ssl.create_default_context(cafile=certifi.where())
+
+
+async def get_msl_context(
+    url: str, auth_cookie: str
+) -> tuple[dict[str, str], dict[str, str]]:
     """Get the required context headers, data and cookies to make a request to MSL."""
 
     BASE_COOKIES: Mapping[str, str] = {
         ".ASPXAUTH": auth_cookie,
     }
 
-    http_session: aiohttp.ClientSession = aiohttp.ClientSession(
-        headers=BASE_HEADERS,
-        cookies=BASE_COOKIES,
-    )
     data_fields: dict[str, str] = {}
     cookies: dict[str, str] = {}
-    async with http_session, http_session.get(url=url) as field_data:
+    async with (
+        aiohttp.ClientSession(
+            headers=BASE_HEADERS, cookies=BASE_COOKIES
+        ) as http_session,
+        http_session.get(url=url, ssl=ssl_context) as field_data,
+    ):
         data_response = BeautifulSoup(
             markup=await field_data.text(),
             features="html.parser",
@@ -87,11 +97,12 @@ async def fetch_report_url_and_cookies(
 
     data_fields.update(form_data)
 
-    session_v2: aiohttp.ClientSession = aiohttp.ClientSession(
-        headers=BASE_HEADERS,
-        cookies=cookies,
-    )
-    async with (session_v2, session_v2.post(url=SALES_REPORTS_URL, data=data_fields) as http_response):  # noqa: E501
+    async with (
+        aiohttp.ClientSession(headers=BASE_HEADERS, cookies=cookies) as session_v2,
+        session_v2.post(
+            url=SALES_REPORTS_URL, data=data_fields, ssl=ssl_context
+        ) as http_response,
+    ):  # noqa: E501
         if http_response.status != 200:
             print("Returned a non 200 status code!!")
             print(http_response)
@@ -148,11 +159,10 @@ async def get_product_customisations(
         print("Failed to retrieve customisations report URL.")
         raise ValueError("Failed to retrieve customisations report URL.")
 
-    file_session: aiohttp.ClientSession = aiohttp.ClientSession(
-        headers=BASE_HEADERS,
-        cookies=cookies,
-    )
-    async with file_session, file_session.get(url=report_url) as file_response:
+    async with (
+        aiohttp.ClientSession(headers=BASE_HEADERS, cookies=cookies) as file_session,
+        file_session.get(url=report_url, ssl=ssl_context) as file_response,
+    ):
         if file_response.status != 200:
             print("Customisation report file session returned a non 200 status code.")
             print(file_response)
