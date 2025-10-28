@@ -35,7 +35,7 @@ async def get_msl_context(
     """Get the required context headers, data and cookies to make a request to MSL."""
 
     BASE_COOKIES: Mapping[str, str] = {
-        ".ASPXAUTH": auth_cookie,
+        ".AspNet.SharedCookie": auth_cookie,
     }
 
     data_fields: dict[str, str] = {}
@@ -60,7 +60,7 @@ async def get_msl_context(
             cookie_morsel: Morsel[str] | None = field_data.cookies.get(cookie)
             if cookie_morsel is not None:
                 cookies[cookie] = cookie_morsel.value
-        cookies[".ASPXAUTH"] = auth_cookie
+        cookies[".AspNet.SharedCookie"] = auth_cookie
 
     if "Login" in data_response.title.string:  # type: ignore[union-attr, operator]
         print("Redirected to login page!")
