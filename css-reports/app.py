@@ -4,7 +4,7 @@ from report import get_product_customisations, check_or_refresh_cookie
 from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler  # type: ignore[import-untyped]
 
-
+import asyncio
 import os
 import re
 
@@ -123,6 +123,6 @@ if __name__ == "__main__":
     # from waitress import serve
 
     scheduler = BackgroundScheduler()
-    scheduler.add_job(refresh_persistent_cookies, trigger="interval", minutes=5)
+    scheduler.add_job(asyncio.run(refresh_persistent_cookies()), trigger="interval", minutes=5)
     scheduler.start()
     app.run(host="0.0.0.0", port=8000, debug=True)
