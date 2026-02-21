@@ -121,8 +121,8 @@ async def fetch_customisation_report():
 
 if __name__ == "__main__":
     # from waitress import serve
-    app.run(host="0.0.0.0", port=8000, debug=True)
 
     scheduler = BackgroundScheduler()
     scheduler.add_job(refresh_persistent_cookies, trigger="interval", minutes=5)
     scheduler.start()
+    app.run(host="0.0.0.0", port=8000, debug=True)
