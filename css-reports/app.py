@@ -19,7 +19,7 @@ persistent_organisations: dict[str, tuple[str, str]] = {}
 
 
 async def refresh_persistent_cookies() -> None:
-    for org_id, (auth_cookie, _) in persistent_organisations.items():
+    for org_id, (_, auth_cookie) in persistent_organisations.items():
         persistent_organisations[org_id] = (
             auth_cookie,
             await check_or_refresh_cookie(org_id, auth_cookie)
