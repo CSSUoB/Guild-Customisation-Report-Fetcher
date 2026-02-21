@@ -1,10 +1,29 @@
 from flask import Flask, request, send_file, jsonify, redirect
-from report import get_product_customisations
+from typing import Final, LiteralString
+from report import get_product_customisations, check_or_refresh_cookie
 from datetime import datetime
+from apscheduler.schedulers.background import BackgroundScheduler  # type: ignore[import-untyped]
+
+import asyncio
 import os
 import re
 
+
 app = Flask("css-reports")
+
+
+TRUE_VALUES: Final[set[LiteralString]] = {"true", "1", "t", "y", "yes", "on"}
+
+
+persistent_organisations: dict[str, tuple[str, str]] = {}
+
+
+async def refresh_persistent_cookies() -> None:
+    for org_id, (origonal_cookie, auth_cookie) in persistent_organisations.items():
+        persistent_organisations[org_id] = (
+            origonal_cookie,
+            await check_or_refresh_cookie(org_id, auth_cookie)
+        )
 
 
 @app.route("/")
@@ -28,9 +47,7 @@ async def fetch_customisation_report():
     product_names: str | None = request.args.get("product_names")
     start_date: str | None = request.args.get("start_date")
     end_date: str | None = request.args.get("end_date")
-
-    print(f"Organisation ID: {organisation_id}")
-    print(f"Product Name: {product_name}")
+    persist: str | None = request.args.get("persist")
 
     if not auth_cookie or not organisation_id:
         return jsonify({"error": "An auth token and organisation id are required."}), 400
@@ -59,13 +76,27 @@ async def fetch_customisation_report():
     name_or_id: str = product_name or product_names  # type: ignore[assignment]
     name_or_id = re.sub(r"\W\s", "", name_or_id)
 
+    prod_cookie: str
+
+    if persist and persist.lower().strip() in TRUE_VALUES:
+        if organisation_id in persistent_organisations.keys():
+            if persistent_organisations[organisation_id][0] != auth_cookie:
+                return jsonify({"error": "Persistent auth cookie does not match existing one for this organisation ID."}), 400
+            else:
+                prod_cookie = persistent_organisations[organisation_id][1]
+        else:
+            persistent_organisations[organisation_id] = (auth_cookie, auth_cookie)
+            prod_cookie = auth_cookie
+    else:
+        prod_cookie = auth_cookie
+
     csv_file_path: str | None = None
 
     try:
         # Generate the CSV file
         csv_file_path = await get_product_customisations(
             product_id_or_name=name_or_id,
-            auth_cookie=auth_cookie,
+            auth_cookie=prod_cookie,
             org_id=organisation_id,
             from_date_input=start_date_dt,
             to_date_input=end_date_dt,
@@ -90,4 +121,8 @@ async def fetch_customisation_report():
 
 if __name__ == "__main__":
     # from waitress import serve
+
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(func=lambda: asyncio.run(refresh_persistent_cookies()), trigger="interval", minutes=5)
+    scheduler.start()
     app.run(host="0.0.0.0", port=8000, debug=True)
