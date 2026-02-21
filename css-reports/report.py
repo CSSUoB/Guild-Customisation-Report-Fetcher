@@ -29,6 +29,21 @@ SALES_TO_TIME_KEY: Final[str] = "ctl00$ctl00$Main$AdminPageContent$drDateRange$t
 ssl_context: ssl.SSLContext = ssl.create_default_context(cafile=certifi.where())
 
 
+async def check_or_refresh_cookie(org_id: str, auth_cookie: str) -> str:
+    """Queries the org page and the cookie will either be returned if valid or a new cookie returned."""
+    async with (
+        aiohttp.ClientSession(headers=BASE_HEADERS, cookies={".AspNet.SharedCookie": auth_cookie}) as session,
+        session.get(f"https://www.guildofstudents.com/organisation/admin/{org_id}") as response,
+    ):
+        await response.text()
+
+        returned_asp_cookie: Morsel[str] | None = response.cookies.get(
+            ".AspNet.SharedCookie"
+        )
+
+        return returned_asp_cookie.value if returned_asp_cookie else auth_cookie
+
+
 async def get_msl_context(
     url: str, auth_cookie: str
 ) -> tuple[dict[str, str], dict[str, str]]:
