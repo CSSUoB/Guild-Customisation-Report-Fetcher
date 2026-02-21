@@ -123,6 +123,6 @@ if __name__ == "__main__":
     # from waitress import serve
 
     scheduler = BackgroundScheduler()
-    scheduler.add_job(asyncio.run(refresh_persistent_cookies()), trigger="interval", minutes=5)
+    scheduler.add_job(func=lambda: asyncio.run(refresh_persistent_cookies()), trigger="interval", minutes=5)
     scheduler.start()
     app.run(host="0.0.0.0", port=8000, debug=True)
