@@ -68,7 +68,10 @@ async def get_msl_context(
 
         for field in data_response.find_all(name="input"):
             if isinstance(field, bs4.Tag):
-                if field.get("name") and field.get("value"):
+                if field.get("type") in ["submit", "image", "button"]:
+                    continue
+
+                if field.get("name") and field.get("value") is not None:
                     data_fields[str(field.get("name"))] = str(field.get("value"))
 
         for cookie in field_data.cookies:
@@ -131,6 +134,7 @@ async def fetch_report_url_and_cookies(
     )
     if not report_viewer_div or report_viewer_div.text.strip() == "":
         print("Failed to load the reports.")
+        print(soup)
         print(report_viewer_div)
         raise ValueError("Failed to load the reports.")
 
