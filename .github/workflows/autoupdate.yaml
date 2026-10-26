@@ -6,13 +6,21 @@ jobs:
   pr-auto-update:
     name: Automatic PR Updater
     runs-on: ubuntu-latest
+    if: github.repository == 'CSSUoB/Guild-Customisation-Report-Fetcher' && github.actor != 'dependabot[bot]'
     permissions: 
       pull-requests: write
       contents: write
     steps:
-      - uses: CSSUoB/pr-auto-updater@v2.3.1
+      - name: Generate Access Token
+        uses: actions/create-github-app-token@v3
+        id: generate-token
+        with:
+          app-id: ${{ vars.PR_AUTO_UPDATE_CLIENT_ID }}
+          private-key: ${{ secrets.PR_AUTO_UPDATE_PRIVATE_KEY }}
+
+      - uses: CSSUoB/pr-auto-updater@v5.0.0
         env:
-          GITHUB_TOKEN: '${{ secrets.PR_AUTO_UPDATE_TOKEN }}'
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
           PR_FILTER: 'labelled'
           PR_LABELS: 'sync'
           MERGE_CONFLICT_ACTION: 'label'
