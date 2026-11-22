@@ -1,10 +1,10 @@
 # Use the official Python image
-FROM python:3.13-slim
+FROM python:3.15-slim
 
 # Set the working directory
 WORKDIR /app
 
-# Copy requirements (if any) and app files to the container
+# Copy requirements and app files to the container
 COPY requirements.txt /app/requirements.txt
 COPY . /app
 
