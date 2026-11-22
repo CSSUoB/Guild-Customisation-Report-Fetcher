@@ -1,7 +1,7 @@
 version: 2
 updates:
 - package-ecosystem: docker
-  directory: "/"
+  directory: "/css-reports"
   schedule:
     interval: daily
   groups:
@@ -10,7 +10,7 @@ updates:
         - "*"
 
 - package-ecosystem: pip
-  directory: "/"
+  directory: "/css-reports"
   schedule:
     interval: daily
   groups:

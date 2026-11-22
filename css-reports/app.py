@@ -1,13 +1,12 @@
-from flask import Flask, request, send_file, jsonify, redirect
-from typing import Final, LiteralString
-from report import get_product_customisations, check_or_refresh_cookie
-from datetime import datetime
-from apscheduler.schedulers.background import BackgroundScheduler  # type: ignore[import-untyped]
-
 import asyncio
 import os
 import re
+from datetime import datetime
+from typing import Final, LiteralString
 
+from apscheduler.schedulers.background import BackgroundScheduler  # type: ignore[import-untyped]
+from flask import Flask, Response, jsonify, request, send_file
+from report import check_or_refresh_cookie, get_product_customisations
 
 app = Flask("css-reports")
 
@@ -22,23 +21,12 @@ async def refresh_persistent_cookies() -> None:
     for org_id, (origonal_cookie, auth_cookie) in persistent_organisations.items():
         persistent_organisations[org_id] = (
             origonal_cookie,
-            await check_or_refresh_cookie(org_id, auth_cookie)
+            await check_or_refresh_cookie(org_id, auth_cookie),
         )
 
 
-@app.route("/")
-def hello():
-    return redirect("https://cssbham.com", code=302)
-
-
-@app.errorhandler(404)
-def page_not_found(e: Exception | int):
-    print(e)
-    return redirect("https://cssbham.com", code=302)
-
-
 @app.route("/customisation_report", methods=["GET"])
-async def fetch_customisation_report():
+async def fetch_customisation_report() -> tuple[Response, int] | Response:
     # Retrieve query parameters
     auth_cookie: str | None = request.args.get("auth_cookie")
     organisation_id: str | None = request.args.get("organisation_id")
@@ -79,9 +67,11 @@ async def fetch_customisation_report():
     prod_cookie: str
 
     if persist and persist.lower().strip() in TRUE_VALUES:
-        if organisation_id in persistent_organisations.keys():
+        if organisation_id in persistent_organisations:
             if persistent_organisations[organisation_id][0] != auth_cookie:
-                return jsonify({"error": "Persistent auth cookie does not match existing one for this organisation ID."}), 400
+                return jsonify(
+                    {"error": "Persistent auth cookie does not match existing one for this organisation ID."}
+                ), 400
             else:
                 prod_cookie = persistent_organisations[organisation_id][1]
         else:
@@ -105,13 +95,11 @@ async def fetch_customisation_report():
 
         if not csv_file_path:
             print("Failed to generate the customisation report")
-            return jsonify(
-                {"error": "Failed to generate the customisation report"}
-            ), 500
+            return jsonify({"error": "Failed to generate the customisation report"}), 500
 
         # Return the file as a response
         return send_file(csv_file_path, as_attachment=True)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return jsonify({"error": str(e)}), 500
     finally:
         # Clean up the generated file

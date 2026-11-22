@@ -6,3 +6,4 @@ python-dotenv
 waitress
 certifi
 APScheduler
+anyio
