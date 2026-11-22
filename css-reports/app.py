@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Final, LiteralString
 
 from apscheduler.schedulers.background import BackgroundScheduler  # type: ignore[import-untyped]
-from flask import Flask, jsonify, redirect, request, send_file
+from flask import Flask, Response, jsonify, request, send_file
 from report import check_or_refresh_cookie, get_product_customisations
 
 app = Flask("css-reports")
@@ -25,19 +25,8 @@ async def refresh_persistent_cookies() -> None:
         )
 
 
-@app.route("/")
-def hello():
-    return redirect("https://cssbham.com", code=302)
-
-
-@app.errorhandler(404)
-def page_not_found(e: Exception | int):
-    print(e)
-    return redirect("https://cssbham.com", code=302)
-
-
 @app.route("/customisation_report", methods=["GET"])
-async def fetch_customisation_report():
+async def fetch_customisation_report() -> tuple[Response, int] | Response:
     # Retrieve query parameters
     auth_cookie: str | None = request.args.get("auth_cookie")
     organisation_id: str | None = request.args.get("organisation_id")
@@ -110,7 +99,7 @@ async def fetch_customisation_report():
 
         # Return the file as a response
         return send_file(csv_file_path, as_attachment=True)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return jsonify({"error": str(e)}), 500
     finally:
         # Clean up the generated file
