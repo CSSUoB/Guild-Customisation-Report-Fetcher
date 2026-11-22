@@ -1,5 +1,5 @@
 import asyncio
-import os
+import io
 import re
 from datetime import datetime
 from typing import Final, LiteralString
@@ -80,11 +80,9 @@ async def fetch_customisation_report() -> tuple[Response, int] | Response:
     else:
         prod_cookie = auth_cookie
 
-    csv_file_path: str | None = None
-
     try:
         # Generate the CSV file
-        csv_file_path = await get_product_customisations(
+        csv_file: io.BytesIO = await get_product_customisations(
             product_id_or_name=name_or_id,
             auth_cookie=prod_cookie,
             org_id=organisation_id,
@@ -93,18 +91,10 @@ async def fetch_customisation_report() -> tuple[Response, int] | Response:
             report_type=report_type,
         )
 
-        if not csv_file_path:
-            print("Failed to generate the customisation report")
-            return jsonify({"error": "Failed to generate the customisation report"}), 500
-
         # Return the file as a response
-        return send_file(csv_file_path, as_attachment=True)
+        return send_file(csv_file, as_attachment=True, download_name="customisations.csv")
     except Exception as e:  # noqa: BLE001
         return jsonify({"error": str(e)}), 500
-    finally:
-        # Clean up the generated file
-        if csv_file_path and os.path.exists(csv_file_path):
-            os.remove(csv_file_path)
 
 
 if __name__ == "__main__":
