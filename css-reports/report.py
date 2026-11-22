@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Final
 
 import aiohttp
+import anyio
 import bs4
 import certifi
 from bs4 import BeautifulSoup
@@ -182,14 +183,16 @@ async def get_product_customisations(
         print("Successfully retrieved customisation report: " + product_id_or_name)
 
         # save the csv file
-        with open("customisations.csv", "wb") as file:
+        async with await anyio.open_file("customisations.csv", "wb") as file:
+            # write the first 4 lines of the file (header and metadata)
             for _ in range(4):
-                file.write(await file_response.content.readline())
+                line = await file_response.content.readline()
+                await file.write(line)
 
             # write the rest of the file, but only if the line contains the product
             async for line in file_response.content:
                 line_data: str = line.decode("utf-8").split(",")[0].strip()
                 if product_id_or_name in line_data:
-                    file.write(line)
+                    await file.write(line)
 
-        return file.name
+        return str(file.name)

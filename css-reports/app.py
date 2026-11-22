@@ -1,13 +1,12 @@
-from flask import Flask, request, send_file, jsonify, redirect
-from typing import Final, LiteralString
-from report import get_product_customisations, check_or_refresh_cookie
-from datetime import datetime
-from apscheduler.schedulers.background import BackgroundScheduler  # type: ignore[import-untyped]
-
 import asyncio
 import os
 import re
+from datetime import datetime
+from typing import Final, LiteralString
 
+from apscheduler.schedulers.background import BackgroundScheduler  # type: ignore[import-untyped]
+from flask import Flask, jsonify, redirect, request, send_file
+from report import check_or_refresh_cookie, get_product_customisations
 
 app = Flask("css-reports")
 
@@ -79,7 +78,7 @@ async def fetch_customisation_report():
     prod_cookie: str
 
     if persist and persist.lower().strip() in TRUE_VALUES:
-        if organisation_id in persistent_organisations.keys():
+        if organisation_id in persistent_organisations:
             if persistent_organisations[organisation_id][0] != auth_cookie:
                 return jsonify(
                     {"error": "Persistent auth cookie does not match existing one for this organisation ID."}
