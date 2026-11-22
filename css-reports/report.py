@@ -1,15 +1,15 @@
 """Python script to fetch a customisation report from the Guild website."""
 
-from typing import Final, Mapping, TYPE_CHECKING
+import re
+import ssl
+from collections.abc import Mapping
+from datetime import datetime
+from typing import TYPE_CHECKING, Final
 
 import aiohttp
 import bs4
 import certifi
-import ssl
-import re
-
 from bs4 import BeautifulSoup
-from datetime import datetime
 
 if TYPE_CHECKING:
     from http.cookies import Morsel
@@ -37,16 +37,12 @@ async def check_or_refresh_cookie(org_id: str, auth_cookie: str) -> str:
     ):
         await response.text()
 
-        returned_asp_cookie: Morsel[str] | None = response.cookies.get(
-            ".AspNet.SharedCookie"
-        )
+        returned_asp_cookie: Morsel[str] | None = response.cookies.get(".AspNet.SharedCookie")
 
         return returned_asp_cookie.value if returned_asp_cookie else auth_cookie
 
 
-async def get_msl_context(
-    url: str, auth_cookie: str
-) -> tuple[dict[str, str], dict[str, str]]:
+async def get_msl_context(url: str, auth_cookie: str) -> tuple[dict[str, str], dict[str, str]]:
     """Get the required context headers, data and cookies to make a request to MSL."""
 
     BASE_COOKIES: Mapping[str, str] = {
@@ -56,9 +52,7 @@ async def get_msl_context(
     data_fields: dict[str, str] = {}
     cookies: dict[str, str] = {}
     async with (
-        aiohttp.ClientSession(
-            headers=BASE_HEADERS, cookies=BASE_COOKIES
-        ) as http_session,
+        aiohttp.ClientSession(headers=BASE_HEADERS, cookies=BASE_COOKIES) as http_session,
         http_session.get(url=url, ssl=ssl_context) as field_data,
     ):
         data_response = BeautifulSoup(
@@ -117,10 +111,8 @@ async def fetch_report_url_and_cookies(
 
     async with (
         aiohttp.ClientSession(headers=BASE_HEADERS, cookies=cookies) as session_v2,
-        session_v2.post(
-            url=SALES_REPORTS_URL, data=data_fields, ssl=ssl_context
-        ) as http_response,
-    ):  # noqa: E501
+        session_v2.post(url=SALES_REPORTS_URL, data=data_fields, ssl=ssl_context) as http_response,
+    ):
         if http_response.status != 200:
             print("Returned a non 200 status code!!")
             print(http_response)
@@ -129,8 +121,8 @@ async def fetch_report_url_and_cookies(
         response_html: str = await http_response.text()
 
     soup = BeautifulSoup(response_html, "html.parser")
-    report_viewer_div: bs4.PageElement | bs4.Tag | bs4.NavigableString | None = (
-        soup.find("div", {"id": "report_viewer_wrapper"})
+    report_viewer_div: bs4.PageElement | bs4.Tag | bs4.NavigableString | None = soup.find(
+        "div", {"id": "report_viewer_wrapper"}
     )
     if not report_viewer_div or report_viewer_div.text.strip() == "":
         print("Failed to load the reports.")
@@ -185,9 +177,7 @@ async def get_product_customisations(
         if file_response.status != 200:
             print("Customisation report file session returned a non 200 status code.")
             print(file_response)
-            raise ValueError(
-                "Customisation report file session returned a non 200 status code."
-            )
+            raise ValueError("Customisation report file session returned a non 200 status code.")
 
         print("Successfully retrieved customisation report: " + product_id_or_name)
 

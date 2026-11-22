@@ -22,7 +22,7 @@ async def refresh_persistent_cookies() -> None:
     for org_id, (origonal_cookie, auth_cookie) in persistent_organisations.items():
         persistent_organisations[org_id] = (
             origonal_cookie,
-            await check_or_refresh_cookie(org_id, auth_cookie)
+            await check_or_refresh_cookie(org_id, auth_cookie),
         )
 
 
@@ -81,7 +81,9 @@ async def fetch_customisation_report():
     if persist and persist.lower().strip() in TRUE_VALUES:
         if organisation_id in persistent_organisations.keys():
             if persistent_organisations[organisation_id][0] != auth_cookie:
-                return jsonify({"error": "Persistent auth cookie does not match existing one for this organisation ID."}), 400
+                return jsonify(
+                    {"error": "Persistent auth cookie does not match existing one for this organisation ID."}
+                ), 400
             else:
                 prod_cookie = persistent_organisations[organisation_id][1]
         else:
@@ -105,9 +107,7 @@ async def fetch_customisation_report():
 
         if not csv_file_path:
             print("Failed to generate the customisation report")
-            return jsonify(
-                {"error": "Failed to generate the customisation report"}
-            ), 500
+            return jsonify({"error": "Failed to generate the customisation report"}), 500
 
         # Return the file as a response
         return send_file(csv_file_path, as_attachment=True)
